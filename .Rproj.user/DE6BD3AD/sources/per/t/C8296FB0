@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1571012136950.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C8296FB0",
+    "lastKnownWriteTime" : 1908207654096,
+    "last_content_update" : 1571012136950,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "6E6FD8F5",
+        "caption" : "allbrews",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=allbrews&cache_key=6E6FD8F5",
+        "displayedObservations" : 2410,
+        "environment" : "",
+        "object" : "allbrews",
+        "preview" : 0,
+        "totalObservations" : 2410,
+        "variables" : 15
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

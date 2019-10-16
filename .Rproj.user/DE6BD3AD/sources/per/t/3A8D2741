@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1570062470560.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "313513771",
+    "id" : "3A8D2741",
+    "lastKnownWriteTime" : 1571203952,
+    "last_content_update" : 1571203952794,
+    "path" : "~/03-School/DS 6306/Project-1/Project.RMD",
+    "project_path" : "Project.RMD",
+    "properties" : {
+        "chunk_output_type" : "console",
+        "content_preview_enabled" : "false",
+        "cursorPosition" : "133,5",
+        "scrollLine" : "113",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
