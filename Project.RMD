@@ -187,10 +187,20 @@ plot_usmap(include = .northeast_region, data = allbrews, values = "IBU", color =
 plot_usmap(include = .new_england, data = allbrews, values = "IBU", color = "red") + 
   scale_fill_continuous(
     low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
+
+
+
+styles = c("IPA", "ale", "lager", "stout", "cider", "porter", "pilsner", "beer")     
+beers = data.frame(styles)
+allbrews$style = ""
+#allbrews$Beer_Name = as.character(allbrews$Beer_Name)
+#beers$styles = as.character(beers$styles)
     
-           
-    
-    
+for (i in 1:dim(allbrews)[1]) {
+  for (j in 1:dim(beers)[1]) {
+    if (grep(beers[j,]$styles,allbrews[i,]$Beer_Name > 0))
+  }
+}
     
     
     
