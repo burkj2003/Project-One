@@ -9,6 +9,8 @@ editor_options:
 #install.packages("ggalt")
 #install.packages("usmap")
 
+# Install libraries
+
 #library(caret)
 #library(e1071)
 library(class)
@@ -35,29 +37,30 @@ combine = merge(beers, breweries, by.x = "Brewery_id", by.y = "Brew_ID")
 names(combine)[names(combine) == "Name.x"] <- "Beer_Name"
 names(combine)[names(combine) == "Name.y"] <- "Brewery_Name"
 
+# sum all the beers by state
 statesum = count(combine, vars = State)
 
-#write.csv(statesum, file = "~/03-School/DS 6306/Project-1/StateData.csv", row.names = FALSE)
-
+# find the first 6 and last 6 beers
 head(combine)
 tail(combine)
 
 # No iteration. But I want to get Predictor-Matrix
 init = mice(combine, maxit=0) 
 predM = init$predictorMatrix
+
 # Do not use following columns to impute values in 'ABV' and 'IBU'. Use the rest.
 predM[, c("Beer_Name", "Beer_ID", "Ounces", "Brewery_Name")]=0    
 imp<-mice(combine, m=5, predictorMatrix = predM)
+
 # Get the final data-frame with imputed values filled in
 nona <- complete(imp)
-#View(nona)
 
+# compute the means for the ABV and IBU by state and then plot
 statemeans = statesum
 statemeans$ABVmean = 0
 statemeans$IBUmean = 0
 statemeans$ABVtotal = 0
 statemeans$IBUtotal = 0
-
 for (i in 1:dim(nona)[1]) {
   for (j in 1:dim(statesum)[1]) {
     if (nona[i,]$State == statesum[j,]$vars) {
@@ -66,46 +69,41 @@ for (i in 1:dim(nona)[1]) {
     }
   }
 }
-
 for (j in 1:dim(statemeans)[1]) {
   statemeans[j,]$ABVmean = statemeans[j,]$ABVtotal / statemeans[j,]$n
   statemeans[j,]$IBUmean = statemeans[j,]$IBUtotal / statemeans[j,]$n
 }
-
 statemeans$ABVmean = round(statemeans$ABVmean, 4)
 statemeans$IBUmean = round(statemeans$IBUmean, 4)
 names(statemeans)[names(statemeans) == "vars"] <- "abbr"
 names(statemeans)[names(statemeans) == "n"] <- "count"
 
-statemeans %>% ggplot(aes(x = abbr, fill = IBUmean)) + geom_bar(aes(fill=abbr), width = 0.5) + ggtitle("Number of Restaurants in Baltimore by Council Disctrict Number")
 
+statemeans %>% ggplot(aes(x = abbr, fill = IBUmean)) + geom_bar(aes(fill=abbr), width = 0.5) + ggtitle("IBU by State")
+
+# Plot IBU by state
 p<-ggplot(data=statemeans, aes(x=abbr, y=IBUmean)) +
   geom_bar(aes(fill=abbr),stat="identity")
 p
 
+# Plot ABV by state
 p<-ggplot(data=statemeans, aes(x=abbr, y=ABVmean)) +
   geom_bar(aes(fill=abbr),stat="identity")
 p
 
-<!-- g <- ggplot(statemeans, aes(x = "abbr")) -->
-<!-- g + geom_bar(aes(fill=abbr), width = 0.5) +  -->
-<!--   theme(axis.text.x = element_text(angle=65, vjust=0.6)) + -->
-<!--   labs(title="Breweries by State",  -->
-<!--        subtitle="Mean ABV and Mean IBU by State") -->
 
+# Find max for IBU and ABV
 ABV <- c('ABV')
 IBU <- c('IBU')
 State <- c('State')
 maxABV <- data.frame(ABV, State)
 maxIBU <- data.frame(IBU, State)
-
 maxABV$ABV = max(statemeans$ABVmean)
 maxIBU$IBU = max(statemeans$IBUmean)
-
 maxABV$State = droplevels(statemeans[grep(max(statemeans$ABVmean), statemeans$ABVmean),]$vars)
-
 maxIBU$State = droplevels(statemeans[grep(max(statemeans$IBUmean), statemeans$IBUmean),]$vars)
 
+# plot ABV vs IBU to see any relationships
 gg <- ggplot(nona, aes(x=ABV, y=IBU)) +
   geom_point(aes(col=State)) +
   geom_smooth(method="loess", se=F) +
@@ -119,18 +117,13 @@ gg <- ggplot(nona, aes(x=ABV, y=IBU)) +
 
 plot(gg)
 
-temp = statepop
-
+# merge datasets for plotting on maps
 str_trim(temp$abbr)
-
 statesum$vars = as.character(statesum$vars)
 statesum$vars = str_trim(statesum$vars)
-
 statebrew = merge(statesum, temp, by.x = "vars", by.y = "abbr")
-
 names(statebrew)[names(statebrew) == "vars"] <- "abbr"
 names(statebrew)[names(statebrew) == "n"] <- "count"
-
 statebrew$per_cap <- statebrew$pop_2015 / statebrew$count
 
 ####  plots 
@@ -159,14 +152,16 @@ plot_usmap(data = statebrew, values = "per_cap", color = "red") +
 
 plot_usmap(include = c("CA", "ID", "NV", "OR", "WA"), data = statebrew, values = "per_cap", color = "red") + 
   scale_fill_continuous(
-    low = "white", high = "red", name = "States Population div by beers", label = scales::comma
+    low = "white", high = "red", name = "States Population div by beers", label = scales::comma,
   ) + theme(legend.position = "right")
 
 
+# remove n/a's from the data
 nona$State = as.character(nona$State)
 nona$State = str_trim(nona$State)
-allbrews = merge(statebrew, nona, by.x = "abbr", by.y = "State")
 
+# merge data to one master data frame
+allbrews = merge(statebrew, nona, by.x = "abbr", by.y = "State")
 
 ### ABV usa
 plot_usmap(data = allbrews, values = "ABV", color = "red") + 
@@ -179,31 +174,112 @@ plot_usmap(data = allbrews, values = "IBU", color = "red") +
     low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
     
 #### IBU North east    
-plot_usmap(include = .northeast_region, data = allbrews, values = "IBU", color = "red") + 
+plot_usmap(include = .northeast_region, data = allbrews, values = "IBU", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the Median IBU by State.") + 
   scale_fill_continuous(
     low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
 
-#### IBU New England    
-plot_usmap(include = .new_england, data = allbrews, values = "IBU", color = "red") + 
+#### IBU North Central
+plot_usmap(include = .north_central_region, data = allbrews, values = "IBU", color = "red") + labs(title = "North central Region", subtitle = "This is a map of the IBU by State.") +
   scale_fill_continuous(
-    low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
+    low = "white", high = "red", name = "IBU by State") + theme(legend.position = "right")
+
+#### IBU Mid-West Central
+plot_usmap(include = .midwest_region, data = allbrews, values = "IBU", color = "red") + labs(title = "Mid-West Region", subtitle = "This is a map of the IBU by State.") +
+  scale_fill_continuous(
+    low = "white", high = "red", name = "IBU by State") + theme(legend.position = "right")
+
+#### IBU South Central
+plot_usmap(include = .south_region, data = allbrews, values = "IBU", color = "red") + labs(title = "South Region", subtitle = "This is a map of the IBU by State.") +
+  scale_fill_continuous(
+    low = "white", high = "red", name = "IBU by State") + theme(legend.position = "right")
+
+#### IBU West Central
+plot_usmap(include = .west_region, data = allbrews, values = "IBU", color = "red") + labs(title = "West Region", subtitle = "This is a map of the IBU by State.") +
+  scale_fill_continuous(
+    low = "white", high = "red", name = "IBU by State") + theme(legend.position = "right")
 
 
 
-styles = c("IPA", "ale", "lager", "stout", "cider", "porter", "pilsner", "beer")     
+temp = allbrews
+
+allbrews=temp
+
+# find common beer styles for EDA
+styles = c("IPA", "APA", "Blonde ale", "brown ale", "red ale", "ale", "lager", "stout", "cider", "porter", "pilsner", "hefeweizen" ,"pilsener", "witbier", "fruit", "KÃ¶lsch")
 beers = data.frame(styles)
-allbrews$style = ""
-#allbrews$Beer_Name = as.character(allbrews$Beer_Name)
-#beers$styles = as.character(beers$styles)
-    
+beers$nodata = 0
+allbrews$class = ""
+allbrews$used = FALSE
+allbrews$Beer_Name = as.character(allbrews$Beer_Name)
+beers$styles = as.character(beers$styles)
 for (i in 1:dim(allbrews)[1]) {
   for (j in 1:dim(beers)[1]) {
-    if (grep(beers[j,]$styles,allbrews[i,]$Beer_Name > 0))
+    x = beers[j,]$style
+    y = allbrews[i,]$Style
+    if (str_detect(y, regex(x, ignore_case = TRUE)) & allbrews[i,]$used != TRUE) {
+      allbrews[i,]$class = beers[j,]$style
+      allbrews[i,]$used = TRUE
+    }
   }
 }
+for (i in 1:dim(allbrews)[1]) {
+  if (allbrews[i,]$used == FALSE) {
+    allbrews[i,]$class = "other"
+  }
+  if (allbrews[i,]$class == "Pilsener" | allbrews[i,]$class == "pilsener") {
+    allbrews[i,]$class = "pilsner"
+  }
+}    
+
+# find the number of beers in each style    
+stylesum = count(allbrews, vars = class)    
     
+
+# compute the means for the ABV and IBU by style and then plot
+stylemeans = stylesum
+stylemeans$ABVmean = 0
+stylemeans$IBUmean = 0
+stylemeans$ABVtotal = 0
+stylemeans$IBUtotal = 0
+for (i in 1:dim(allbrews)[1]) {
+  for (j in 1:dim(stylesum)[1]) {
+  
+    if (allbrews[i,]$class == stylesum[j,]$vars) {
+      stylemeans[j,]$ABVtotal = stylemeans[j,]$ABVtotal + allbrews[i,]$ABV
+      stylemeans[j,]$IBUtotal = stylemeans[j,]$IBUtotal + allbrews[i,]$IBU
+    }
     
-    
+  }
+}
+
+for (j in 1:dim(stylemeans)[1]) {
+  stylemeans[j,]$ABVmean = stylemeans[j,]$ABVtotal / stylemeans[j,]$n
+  stylemeans[j,]$IBUmean = stylemeans[j,]$IBUtotal / stylemeans[j,]$n
+}
+
+stylemeans$ABVmean = round(stylemeans$ABVmean, 4)
+stylemeans$IBUmean = round(stylemeans$IBUmean, 4)
+names(stylemeans)[names(stylemeans) == "vars"] <- "abbr"
+names(stylemeans)[names(stylemeans) == "n"] <- "count"
+
+
+names(stylemeans)[names(stylemeans) == "abbr"] <- "Style"
+# plot ABV vs IBU to see any relationships
+gg <- ggplot(stylemeans, aes(x=ABVmean, y=IBUmean)) +
+  geom_point(aes(col=Style, size=count)) +
+  labs(subtitle="ABV vs IBU",
+       y="IBU",
+       x="ABV",
+       title="Beer Style ABV vs IBU",
+       caption = "Source: Brewery Data")
+
+plot(gg)
+
+
+
+
+
+
 
 
 
