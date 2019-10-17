@@ -61,6 +61,9 @@ statemeans$ABVmean = 0
 statemeans$IBUmean = 0
 statemeans$ABVtotal = 0
 statemeans$IBUtotal = 0
+statemeans$ABVmedian = 0
+statemeans$IBUmedian = 0
+
 for (i in 1:dim(nona)[1]) {
   for (j in 1:dim(statesum)[1]) {
     if (nona[i,]$State == statesum[j,]$vars) {
@@ -69,10 +72,12 @@ for (i in 1:dim(nona)[1]) {
     }
   }
 }
+
 for (j in 1:dim(statemeans)[1]) {
   statemeans[j,]$ABVmean = statemeans[j,]$ABVtotal / statemeans[j,]$n
   statemeans[j,]$IBUmean = statemeans[j,]$IBUtotal / statemeans[j,]$n
 }
+
 statemeans$ABVmean = round(statemeans$ABVmean, 4)
 statemeans$IBUmean = round(statemeans$IBUmean, 4)
 names(statemeans)[names(statemeans) == "vars"] <- "abbr"
@@ -118,7 +123,6 @@ gg <- ggplot(nona, aes(x=ABV, y=IBU)) +
 plot(gg)
 
 # merge datasets for plotting on maps
-str_trim(temp$abbr)
 statesum$vars = as.character(statesum$vars)
 statesum$vars = str_trim(statesum$vars)
 statebrew = merge(statesum, temp, by.x = "vars", by.y = "abbr")
@@ -163,6 +167,21 @@ nona$State = str_trim(nona$State)
 # merge data to one master data frame
 allbrews = merge(statebrew, nona, by.x = "abbr", by.y = "State")
 
+# compute the ABV state stats
+stateABV = allbrews %>%
+  group_by(abbr) %>%
+  summarise_each(funs(max, min, mean, median, sd), ABV)
+
+# compute the IBU state stats
+stateIBU = allbrews %>%
+  group_by(abbr) %>%
+  summarise_each(funs(max, min, mean, median, sd), IBU)
+
+x = statebrew
+statebrew = x
+stateIBU = merge(statebrew, stateIBU, by.x = "abbr", by.y = "abbr")
+stateABV = merge(statebrew, stateIBU, by.x = "abbr", by.y = "abbr")
+
 ### ABV usa
 plot_usmap(data = allbrews, values = "ABV", color = "red") + 
   scale_fill_continuous(
@@ -174,7 +193,7 @@ plot_usmap(data = allbrews, values = "IBU", color = "red") +
     low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
     
 #### IBU North east    
-plot_usmap(include = .northeast_region, data = allbrews, values = "IBU", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the Median IBU by State.") + 
+plot_usmap(include = .northeast_region, data = stateIBU, values = "median", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the Median IBU by State.") + 
   scale_fill_continuous(
     low = "white", high = "red", name = "IBU by State"  ) + theme(legend.position = "right")
 
