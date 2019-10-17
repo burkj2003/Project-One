@@ -27,8 +27,8 @@ set.seed(6)
 # splitPerc = .75
 
 # Read in csv files
-beers = read.csv("~/03-School/DS 6306/Project-1/Beers.csv")
-breweries = read.csv("~/03-School/DS 6306/Project-1/Breweries.csv")
+beers = read.csv("~/03-School/DS 6306/Project-1/Project-One/Beers.csv")
+breweries = read.csv("~/03-School/DS 6306/Project-1/Project-One/Breweries.csv")
 
 # add new data not on GitHub
 combine = merge(beers, breweries, by.x = "Brewery_id", by.y = "Brew_ID")
@@ -55,74 +55,80 @@ imp<-mice(combine, m=5, predictorMatrix = predM)
 # Get the final data-frame with imputed values filled in
 nona <- complete(imp)
 
-# compute the means for the ABV and IBU by state and then plot
-statemeans = statesum
-statemeans$ABVmean = 0
-statemeans$IBUmean = 0
-statemeans$ABVtotal = 0
-statemeans$IBUtotal = 0
-statemeans$ABVmedian = 0
-statemeans$IBUmedian = 0
-
-for (i in 1:dim(nona)[1]) {
-  for (j in 1:dim(statesum)[1]) {
-    if (nona[i,]$State == statesum[j,]$vars) {
-      statemeans[j,]$ABVtotal = statemeans[j,]$ABVtotal + nona[i,]$ABV
-      statemeans[j,]$IBUtotal = statemeans[j,]$IBUtotal + nona[i,]$IBU
-    }
-  }
-}
-
-for (j in 1:dim(statemeans)[1]) {
-  statemeans[j,]$ABVmean = statemeans[j,]$ABVtotal / statemeans[j,]$n
-  statemeans[j,]$IBUmean = statemeans[j,]$IBUtotal / statemeans[j,]$n
-}
-
-statemeans$ABVmean = round(statemeans$ABVmean, 4)
-statemeans$IBUmean = round(statemeans$IBUmean, 4)
-names(statemeans)[names(statemeans) == "vars"] <- "abbr"
-names(statemeans)[names(statemeans) == "n"] <- "count"
+# write.csv(nona, file = "~/03-School/DS 6306/Project-1/Project-One/nona.csv")
+# nona = read.csv("~/03-School/DS 6306/Project-1/Project-One/nona.csv")
 
 
-statemeans %>% ggplot(aes(x = abbr, fill = IBUmean)) + geom_bar(aes(fill=abbr), width = 0.5) + ggtitle("IBU by State")
+<!-- # compute the means for the ABV and IBU by state and then plot -->
+<!-- statemeans = statesum -->
+<!-- statemeans$ABVmean = 0 -->
+<!-- statemeans$IBUmean = 0 -->
+<!-- statemeans$ABVtotal = 0 -->
+<!-- statemeans$IBUtotal = 0 -->
+<!-- statemeans$ABVmedian = 0 -->
+<!-- statemeans$IBUmedian = 0 -->
 
-# Plot IBU by state
-p<-ggplot(data=statemeans, aes(x=abbr, y=IBUmean)) +
-  geom_bar(aes(fill=abbr),stat="identity")
-p
+<!-- for (i in 1:dim(nona)[1]) { -->
+<!--   for (j in 1:dim(statesum)[1]) { -->
+<!--     if (nona[i,]$State == statesum[j,]$vars) { -->
+<!--       statemeans[j,]$ABVtotal = statemeans[j,]$ABVtotal + nona[i,]$ABV -->
+<!--       statemeans[j,]$IBUtotal = statemeans[j,]$IBUtotal + nona[i,]$IBU -->
+<!--     } -->
+<!--   } -->
+<!-- } -->
 
-# Plot ABV by state
-p<-ggplot(data=statemeans, aes(x=abbr, y=ABVmean)) +
-  geom_bar(aes(fill=abbr),stat="identity")
-p
+<!-- for (j in 1:dim(statemeans)[1]) { -->
+<!--   statemeans[j,]$ABVmean = statemeans[j,]$ABVtotal / statemeans[j,]$n -->
+<!--   statemeans[j,]$IBUmean = statemeans[j,]$IBUtotal / statemeans[j,]$n -->
+<!-- } -->
+
+<!-- statemeans$ABVmean = round(statemeans$ABVmean, 4) -->
+<!-- statemeans$IBUmean = round(statemeans$IBUmean, 4) -->
+<!-- names(statemeans)[names(statemeans) == "vars"] <- "abbr" -->
+<!-- names(statemeans)[names(statemeans) == "n"] <- "count" -->
 
 
-# Find max for IBU and ABV
-ABV <- c('ABV')
-IBU <- c('IBU')
-State <- c('State')
-maxABV <- data.frame(ABV, State)
-maxIBU <- data.frame(IBU, State)
-maxABV$ABV = max(statemeans$ABVmean)
-maxIBU$IBU = max(statemeans$IBUmean)
-maxABV$State = droplevels(statemeans[grep(max(statemeans$ABVmean), statemeans$ABVmean),]$vars)
-maxIBU$State = droplevels(statemeans[grep(max(statemeans$IBUmean), statemeans$IBUmean),]$vars)
+<!-- statemeans %>% ggplot(aes(x = abbr, fill = IBUmean)) + geom_bar(aes(fill=abbr), width = 0.5) + ggtitle("IBU by State") -->
 
-# plot ABV vs IBU to see any relationships
-gg <- ggplot(nona, aes(x=ABV, y=IBU)) +
-  geom_point(aes(col=State)) +
-  geom_smooth(method="loess", se=F) +
-  xlim(c(0, 0.15)) +
-  ylim(c(0, 150)) + 
-  labs(subtitle="ABV vs IBU",
-       y="IBU",
-       x="ABV",
-       title="Scatterplot",
-       caption = "Source: Brewery Data")
+<!-- # Plot IBU by state -->
+<!-- p<-ggplot(data=statemeans, aes(x=abbr, y=IBUmean)) + -->
+<!--   geom_bar(aes(fill=abbr),stat="identity") -->
+<!-- p -->
 
-plot(gg)
+<!-- # Plot ABV by state -->
+<!-- p<-ggplot(data=statemeans, aes(x=abbr, y=ABVmean)) + -->
+<!--   geom_bar(aes(fill=abbr),stat="identity") -->
+<!-- p -->
+
+
+<!-- # Find max for IBU and ABV -->
+<!-- ABV <- c('ABV') -->
+<!-- IBU <- c('IBU') -->
+<!-- State <- c('State') -->
+<!-- maxABV <- data.frame(ABV, State) -->
+<!-- maxIBU <- data.frame(IBU, State) -->
+<!-- maxABV$ABV = max(statemeans$ABVmean) -->
+<!-- maxIBU$IBU = max(statemeans$IBUmean) -->
+<!-- maxABV$State = droplevels(statemeans[grep(max(statemeans$ABVmean), statemeans$ABVmean),]$vars) -->
+<!-- maxIBU$State = droplevels(statemeans[grep(max(statemeans$IBUmean), statemeans$IBUmean),]$vars) -->
+
+<!-- # plot ABV vs IBU to see any relationships -->
+<!-- gg <- ggplot(nona, aes(x=ABV, y=IBU)) + -->
+<!--   geom_point(aes(col=State)) + -->
+<!--   geom_smooth(method="loess", se=F) + -->
+<!--   xlim(c(0, 0.15)) + -->
+<!--   ylim(c(0, 150)) +  -->
+<!--   labs(subtitle="ABV vs IBU", -->
+<!--        y="IBU", -->
+<!--        x="ABV", -->
+<!--        title="Scatterplot", -->
+<!--        caption = "Source: Brewery Data") -->
+
+<!-- plot(gg) -->
 
 # merge datasets for plotting on maps
+
+temp = statepop
 statesum$vars = as.character(statesum$vars)
 statesum$vars = str_trim(statesum$vars)
 statebrew = merge(statesum, temp, by.x = "vars", by.y = "abbr")
@@ -134,11 +140,6 @@ statebrew$per_cap <- statebrew$pop_2015 / statebrew$count
 plot_usmap(data = statebrew, values = "count", color = "red") + 
   scale_fill_continuous(name = "Beers by State", label = scales::comma) + 
   theme(legend.position = "right")
-  
-plot_usmap(data = allbrews, values = "count", color = "navy") + 
-  scale_fill_continuous(
-    low = "grey99", high = "grey0", name = "Beers by State", label = scales::comma
-  ) + theme(legend.position = "right")  
 
 plot_usmap(data = statebrew, values = "count", color = "red") + 
   scale_fill_continuous(
@@ -146,17 +147,10 @@ plot_usmap(data = statebrew, values = "count", color = "red") +
   ) + theme(legend.position = "right")
 
 
-
 #####  states pop div by beers
 plot_usmap(data = statebrew, values = "per_cap", color = "red") + 
   scale_fill_continuous(
     low = "white", high = "red", name = "States Population div by beers", label = scales::comma
-  ) + theme(legend.position = "right")
-
-
-plot_usmap(include = c("CA", "ID", "NV", "OR", "WA"), data = statebrew, values = "per_cap", color = "red") + 
-  scale_fill_continuous(
-    low = "white", high = "red", name = "States Population div by beers", label = scales::comma,
   ) + theme(legend.position = "right")
 
 
@@ -177,13 +171,17 @@ stateIBU = allbrews %>%
   group_by(abbr) %>%
   summarise_each(funs(max, min, mean, median, sd), IBU)
 
-x = statebrew
-statebrew = x
-stateIBU = merge(statebrew, stateIBU, by.x = "abbr", by.y = "abbr")
-stateABV = merge(statebrew, stateIBU, by.x = "abbr", by.y = "abbr")
+
+
+
+<!-- x = statebrew -->
+<!-- statebrew = x -->
+<!-- #stateIBU = merge(allbrews, stateIBU, by.x = "abbr", by.y = "abbr") -->
+<!-- #stateABV = merge(allbrews, stateABV, by.x = "abbr", by.y = "abbr") -->
+
 
 ### ABV usa
-plot_usmap(data = allbrews, values = "ABV", color = "red") + 
+plot_usmap(data = stateABV, values = "median", color = "red") + 
   scale_fill_continuous(
     low = "white", high = "red", name = "Alcohol by Volume by State"  ) + theme(legend.position = "right")
 
