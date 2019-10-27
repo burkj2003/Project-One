@@ -17,5 +17,5 @@ Breweries.csv = breweries file
 StateData.csv = breweries by state count  
 nona.csv = no N/A's data file from merging beers.csv and breweries.csv file plus MICE  
 
-V/r
+V/r  
 Jason Burk
