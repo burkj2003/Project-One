@@ -17,8 +17,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # Install libraries
-
-4
+library(caret)
+library(e1071)
+library(class)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(mice)
+library(ggalt)
+library(usmap)
 ```
 
 
@@ -79,6 +87,7 @@ tail(combine)
 
 #write.csv(nona, file = "~/03-School/DS 6306/Project-1/Project-One/nona.csv")
 nona = read.csv("~/03-School/DS 6306/Project-1/Project-One/nona.csv")
+nona$ABV = nona$ABV * 100
 ```
 
 ##  **4.   Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.**  
@@ -120,7 +129,6 @@ stateIBU = allbrews %>%
 # Merge data files
 stateABV = merge(temp, stateABV, by.x = "abbr", by.y = "abbr")
 stateIBU = merge(temp, stateIBU, by.x = "abbr", by.y = "abbr")
-stateABV$median = stateABV$median * 100
 
 ### ABV usa -->
 plot_usmap(data = stateABV, values = "median", color = "red") + labs(title = "Median ABV by all 50 States", subtitle = "This is a map of the ABV by State.") + 
@@ -131,6 +139,24 @@ low = "white", high = "midnightblue", name = "Alcohol by Volume % by State"  ) +
 plot_usmap(data = stateIBU, values = "median", color = "red") + labs(title = "Median IBU by all 50 States", subtitle = "This is a map of the IBU by State.") + 
 scale_fill_continuous( 
 low = "white", high = "midnightblue", name = "IBU by State"  ) + theme(legend.position = "right")
+
+# Make top 10 Median ABV by State
+nona$State = as.character(nona$State)
+nona$State = str_trim(nona$State)
+medianABVIBU<-nona%>%group_by(State)%>%summarize(medianABV=median(ABV),medianIBU=median(IBU))
+top10medABV=head(medianABVIBU,10)
+top10medIBU=head(medianABVIBU,10)
+top10medABV%>%ggplot(aes(x=reorder(State,-medianABV),y=medianABV))+
+ geom_bar(stat="identity",fill="midnightblue")+geom_text(aes(label=medianABV), vjust=1.6, color="white", size=3)+
+ggtitle("Top 10 Highest Median Alcohol by Volumes by State")+xlab("States")+ylab("Alcohol by Volume")
+top10medABV[order(-top10medABV$medianABV),]top10medIBU=head(medianABVIBU,10)
+
+# Make top 10 Median IBU by State
+top10medIBU%>%ggplot(aes(x=reorder(State,-medianIBU),y=medianIBU))+
+ geom_bar(stat="identity",fill="midnightblue")+geom_text(aes(label=medianIBU), vjust=1.6, color="white", size=3)+
+ggtitle("Top 10 Highest Median International Bitterness Units by State")+xlab("States")+ylab("Alcohol by Volume")
+top10medIBU[order(-top10medIBU$medianIBU),]
+
 ```
 
 
@@ -138,8 +164,6 @@ low = "white", high = "midnightblue", name = "IBU by State"  ) + theme(legend.po
 
 ```{r}
 #### Max ABV
-stateABV$max = stateABV$max * 100
-stateABV$min = stateABV$min * 100
 plot_usmap(data = stateABV, values = "max", include = "CO", color = "red") + labs(title = "Max ABV by State", subtitle = "This is a map of the State with the highest ABV") +
   scale_fill_continuous(
     low = "white", high = "midnightblue", name = "ABV by %"  ) + theme(legend.position = "right")
@@ -154,10 +178,12 @@ plot_usmap(data = stateIBU, values = "max", include = "CO", color = "red") + lab
 ##  **6.   Comment on the summary statistics and distribution of the ABV variable.**  
 
 ```{r}
+# print out the summary statistics for ABV mean and ABV by all data
 summary(stateABV$mean)
 summary(allbrews$ABV)
 
-nona%>%ggplot(aes(x="", y=ABV,fill=ABV))+geom_boxplot(width=.4,fill="blue")+ylab("ABV")+labs(title="Box plot of ABV Summary Statistics", caption = "Source: Brewery Statistics", x="", y="ABV")
+# Make a boxplot of the ABV summary statistics
+nona%>%ggplot(aes(x="", y=ABV,fill=ABV))+geom_boxplot(width=.4,fill="blue")+ylab("ABV")+labs(title="Box plot of ABV Summary Statistics", caption = "Source: Brewery Statistics", x="", y="Percent (%) ABV")
 ```
 
 ##  **7.   Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.**
@@ -172,72 +198,10 @@ plot_usmap(data = stateABV, values = "max", color = "red") + labs(title = "Media
 plot_usmap(data = stateIBU, values = "max", color = "red") + labs(title = "Median IBU by all 50 States", subtitle = "This is a map of the IBU by State.") +
   scale_fill_continuous(
     low = "white", high = "midnightblue", name = "IBU by State"  ) + theme(legend.position = "right")
-```
-
-
-##  **8.  Budweiser would also like to investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  You decide to use KNN classification to investigate this relationship.  Provide statistical evidence one way or the other. You can of course assume your audience is comfortable with percentages … KNN is very easy to understand.**  
-   
-```{r}    
-### IBU North east    
-plot_usmap(include = .northeast_region, data = stateIBU, values = "median", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the Median IBU by State.") + 
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "IBU by State"  ) + theme(legend.position = "right")
-
-### IBU North Central
-plot_usmap(include = .north_central_region, data = allbrews, values = "IBU", color = "red") + labs(title = "North central Region", subtitle = "This is a map of the IBU by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "IBU by State") + theme(legend.position = "right")
-
-### IBU Mid-West Central
-plot_usmap(include = .midwest_region, data = allbrews, values = "IBU", color = "red") + labs(title = "Mid-West Region", subtitle = "This is a map of the IBU by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "IBU by State") + theme(legend.position = "right")
-
-### IBU South Central
-plot_usmap(include = .south_region, data = allbrews, values = "IBU", color = "red") + labs(title = "South Region", subtitle = "This is a map of the IBU by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "IBU by State") + theme(legend.position = "right")
-
-### IBU West Central
-plot_usmap(include = .west_region, data = allbrews, values = "IBU", color = "red") + labs(title = "West Region", subtitle = "This is a map of the IBU by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "IBU by State") + theme(legend.position = "right")
-
-
-
-### ABV North east    
-plot_usmap(include = .northeast_region, data = stateABV, values = "median", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the Median ABV by State.") + 
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "ABV by State"  ) + theme(legend.position = "right")
-
-### ABV North Central
-plot_usmap(include = .north_central_region, data = allbrews, values = "ABV", color = "red") + labs(title = "North central Region", subtitle = "This is a map of the ABV by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "ABV by State") + theme(legend.position = "right")
-
-### ABV Mid-West Central
-plot_usmap(include = .midwest_region, data = allbrews, values = "ABV", color = "red") + labs(title = "Mid-West Region", subtitle = "This is a map of the ABV by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "ABV by State") + theme(legend.position = "right")
-
-### ABV South Central
-plot_usmap(include = .south_region, data = allbrews, values = "ABV", color = "red") + labs(title = "South Region", subtitle = "This is a map of the ABV by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "ABV by State") + theme(legend.position = "right")
-
-### ABV West Central
-plot_usmap(include = .west_region, data = allbrews, values = "ABV", color = "red") + labs(title = "West Region", subtitle = "This is a map of the ABV by State.") +
-  scale_fill_continuous(
-    low = "white", high = "midnightblue", name = "ABV by State") + theme(legend.position = "right")
-
-######################
-temp = allbrews
-allbrews=temp
-######################
-
 
 # find common beer styles for EDA
 styles = c("IPA", "APA", "Blonde ale", "brown ale", "red ale", "ale", "lager", "stout", "cider", "porter", "pilsner", "hefeweizen" ,"pilsener", "witbier", "fruit", "KÃ¶lsch")
+styles = c("IPA", "APA", "ale", "lager", "stout", "pilsner", "pilsener")
 beers = data.frame(styles)
 beers$nodata = 0
 allbrews$class = ""
@@ -266,7 +230,6 @@ for (i in 1:dim(allbrews)[1]) {
 # find the number of beers in each style    
 stylesum = count(allbrews, vars = class)    
     
-
 # compute the means for the ABV and IBU by style and then plot
 stylemeans = stylesum
 stylemeans$ABVmean = 0
@@ -283,102 +246,116 @@ for (i in 1:dim(allbrews)[1]) {
     
   }
 }
-
 for (j in 1:dim(stylemeans)[1]) {
   stylemeans[j,]$ABVmean = stylemeans[j,]$ABVtotal / stylemeans[j,]$n
   stylemeans[j,]$IBUmean = stylemeans[j,]$IBUtotal / stylemeans[j,]$n
 }
-
 stylemeans$ABVmean = round(stylemeans$ABVmean, 4)
 stylemeans$IBUmean = round(stylemeans$IBUmean, 4)
 names(stylemeans)[names(stylemeans) == "vars"] <- "abbr"
 names(stylemeans)[names(stylemeans) == "n"] <- "count"
-
-
 names(stylemeans)[names(stylemeans) == "abbr"] <- "Style"
+
 # plot ABV vs IBU to see any relationships
 gg <- ggplot(stylemeans, aes(x=ABVmean, y=IBUmean)) +
   geom_point(aes(col=Style, size=count)) +
   labs(subtitle="ABV vs IBU",
        y="IBU",
-       x="ABV",
+       x="Percent (%) ABV",
        title="Beer Style ABV vs IBU",
        caption = "Source: Brewery Data")
 
 plot(gg)
+
+# Make a scatterplot of all types of beer
+g <- ggplot(allbrews, aes(ABV, IBU, color=class))
+g + geom_jitter(width = .5, size=1 ) +
+  geom_point(aes(col=class)) + 
+  labs(subtitle="ABV v IBU", 
+       y="IBU", 
+       x="ABV", 
+       title="Scatterplot of Various Types of Beer")
+
+
 ```
 
 
+##  **8.  Budweiser would also like to investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  You decide to use KNN classification to investigate this relationship.  Provide statistical evidence one way or the other. You can of course assume your audience is comfortable with percentages … KNN is very easy to understand.**  
 
-##  **9. Knock their socks off!  Find one other useful inference from the data that you feel Budweiser may be able to find value in.  You must convince them why it is important and back up your conviction with appropriate statistical evidence.** 
+```{r}   
+# find common ale styles for EDA
+allAles = allbrews
+stylesofAle = c("IPA", "APA", "Blonde ale", "Brown ale", "Red ale", "Ale")
+ales = data.frame(stylesofAle)
+ales$nodata = 0
+allAles$class = ""
+allAles$used = FALSE
+allAles$Beer_Name = as.character(allAles$Beer_Name)
+ales$stylesofAle = as.character(ales$stylesofAle)
+styleSubset <- allAles
+allAles <-styleSubset[grep(paste(stylesofAle,collapse="|"),styleSubset$Style,ignore.case = TRUE),]
+for (i in 1:dim(allAles)[1]) {
+  for (j in 1:dim(ales)[1]) {
+    x = ales[j,]$stylesofAle
+    y = allAles[i,]$Style
+    if (str_detect(y, regex(x, ignore_case = TRUE)) & allAles[i,]$used != TRUE) {
+      allAles[i,]$class = ales[j,]$stylesofAle
+      allAles[i,]$used = TRUE
+    }
+  }
+}
 
-```{r}
-# <!-- justABV<-nona%>%select(ABV) -->
-# <!-- summary(justABV) -->
-# <!-- hist(justABV$ABV, -->
-# <!--     main="Histogram of Alcohol by Volume of beer population", -->
-# <!--     xlab="Alcohol by Volume", -->
-# <!--     ylab="Beer population", -->
-# <!--     col="blue", -->
-# <!--     border="black" -->
-# <!--     ) -->
-# <!-- nona%>%ggplot(aes(x=ABV,fill=State))+geom_histogram(bins=30)+ggtitle("Alcohol by Volume Distribution of Beer population")+xlab("ABV Content")+ylab("Number of Beers")#1 sample t-test of ABV data -->
-# <!-- logjustABV<-log(justABV) -->
-# <!-- t.test(x=justABV, conf.int = "TRUE", alternative = "two.sided") -->
-# 
-# <!-- justIBU<-nona%>%select(IBU) -->
-# <!-- hist(justIBU$IBU, -->
-# <!--     main="Histogram of International Bitternes Units of beer population", -->
-# <!--     xlab="International Bitternes Units", -->
-# <!--     ylab="Beer population", -->
-# <!--     col="blue", -->
-# <!--     border="black" -->
-# <!--     ) -->
-# <!-- nona%>%ggplot(aes(x=IBU,color=State))+geom_histogram(bins=30)+ggtitle("Distribution of Bitterness of Beer population")+xlab("Bitterness")+ylab("Number of Beers") -->
+# find the number of ales 
+stylesum = count(allAles, vars = class)    
 
+# compute the means for the ABV and IBU by style and then plot
+stylemeans = stylesum
+stylemeans$ABVmean = 0
+stylemeans$IBUmean = 0
+stylemeans$ABVtotal = 0
+stylemeans$IBUtotal = 0
+for (i in 1:dim(allAles)[1]) {
+  for (j in 1:dim(stylesum)[1]) {
+  
+    if (allAles[i,]$class == stylesum[j,]$vars) {
+      stylemeans[j,]$ABVtotal = stylemeans[j,]$ABVtotal + allAles[i,]$ABV
+      stylemeans[j,]$IBUtotal = stylemeans[j,]$IBUtotal + allAles[i,]$IBU
+    }
+    
+  }
+}
 
+for (j in 1:dim(stylemeans)[1]) {
+  stylemeans[j,]$ABVmean = stylemeans[j,]$ABVtotal / stylemeans[j,]$n
+  stylemeans[j,]$IBUmean = stylemeans[j,]$IBUtotal / stylemeans[j,]$n
+}
+stylemeans$ABVmean = round(stylemeans$ABVmean, 4)
+stylemeans$IBUmean = round(stylemeans$IBUmean, 4)
+names(stylemeans)[names(stylemeans) == "vars"] <- "abbr"
+names(stylemeans)[names(stylemeans) == "n"] <- "count"
+names(stylemeans)[names(stylemeans) == "abbr"] <- "Style"
 
+# plot ABV vs IBU to see any relationships
+gg <- ggplot(stylemeans, aes(x=ABVmean, y=IBUmean)) +
+  geom_point(aes(col=Style, size=count)) +
+  labs(subtitle="ABV vs IBU",
+       y="IBU",
+       x="Percent (%) ABV",
+       title="Ales ABV vs IBU",
+       caption = "Source: Brewery Data")
 
+plot(gg)
 
-styleSubset <- nona%>%select(Style,ABV,IBU)
-beermatch <- c("IPA","Ale","Inda Pale Ale")
-allAles <-styleSubset[grep(paste(beermatch,collapse="|"),styleSubset$Style,ignore.case = TRUE),]
-
+#### Find optimal k-factor
+styleSubset <- allAles%>%select(Style,ABV,IBU)
+allAles <-styleSubset[grep(paste(stylesofAle,collapse="|"),styleSubset$Style,ignore.case = TRUE),]
 allAles$styleClass <- ifelse(grepl("IPA", allAles$Style,ignore.case = T), "IPA",
          ifelse(grepl("Ale", allAles$Style, ignore.case = T), "Ale", "Other"))
 head(allAles)
-
-set.seed(6)
-perc=.8
-trainIndices = sample(1:dim(allAles)[1],round(perc * dim(allAles)[1]))
-train = allAles[trainIndices,]
-test = allAles[-trainIndices,]
-iterations=30
-
-accs = data.frame(accuracy = numeric(iterations), k = numeric(iterations))
-
-for(i in 1:iterations)
-{
-  classifications = knn(train[,c(2,3)],test[,c(2,3)],train$styleClass, prob = TRUE, k = i)
-  table(test$styleClass,classifications)
-  CM = confusionMatrix(table(test$styleClass,classifications))
-  accs$accuracy[i] = CM$overall[1]
-  accs$k[i] = i
-}
-
-plot(accs$k,accs$accuracy, type = "l")
-
-
-plot(accs$k,accs$accuracy, type = "l", xlab = "k", ylab = "Accuracy", main = "K-factor vs Accuracy") 
-
-
-#### Find optimal k-factor
-
 iterations = 100
 numks = 30
-
+perc=.8
 masterAcc = matrix(nrow = iterations, ncol = numks)
-
 for(j in 1:iterations)
 {
   accs = data.frame(accuracy = numeric(30), k = numeric(30))
@@ -393,18 +370,121 @@ for(j in 1:iterations)
     masterAcc[j,i] = CM$overall[1]
   }
 }
-
 MeanAcc = colMeans(masterAcc)
-
 plot(seq(1,numks,1),MeanAcc, type = "l", xlab = "k", ylab = "Accuracy", main = "K-factor vs Accuracy")
 
-
+# k=7 based on previous data and charts
 k = 7
 
+# Make a confusion matrix for the k=7
+classifications = knn(train[,c(2,3)],test[,c(2,3)],train$styleClass, prob = TRUE, k = k)
+table(test$styleClass,classifications)
+confusionMatrix(table(test$styleClass,classifications))
+
+# Make a scatterplot of Ales v IPA
+gg <- ggplot(allAles, aes(x=ABV, y=IBU)) +
+  geom_point(aes(fill=ABV,col=styleClass)) +
+  geom_smooth(method="loess", se=F) + 
+  labs(subtitle="ABV Vs IBU", 
+       y="IBU", 
+       x="ABV", 
+       title="Scatterplot of Ales", 
+       caption = "Source: Brewery Data")
+
+plot(gg)
+
+# Make a scatterplot with jitter of ales vs IPA
+theme_set(theme_bw())  # pre-set the bw theme.
+
+# Plot a scatterplot of the ABV v IBU by ale or IPA
+g <- ggplot(allAles, aes(ABV, IBU, color=styleClass))
+g + geom_jitter(width = .5, size=1 ) +
+  geom_smooth(method="loess", se=F) + 
+  labs(subtitle="ABV v IBU", 
+       y="IBU", 
+       x="ABV", 
+       title="Scatterplot of Ales")
+
+# define the circled region parameters
+ale_select <- allAles[allAles$IBU > 5 & allAles$IBU <= 50 & allAles$ABV > 4 & allAles$ABV < 6.5,]
+ipa_select <- allAles[allAles$IBU > 55 & allAles$IBU <= 100 & allAles$ABV > 5.8 & allAles$ABV < 7.6,]
+
+# Plot a scatterplot of ABV v IBU by ale or IBA and circle regions with each
+g <- ggplot(allAles, aes(ABV, IBU, color=styleClass))
+g + geom_jitter(width = .5, size=1 ) +
+  geom_encircle(aes(x=ABV,y=IBU), data=ale_select,color="orange", size=2, expand=0.008) +
+  geom_encircle(aes(x=ABV,y=IBU), data=ipa_select,color="cyan", size=2, expand=0.008) +
+  geom_smooth(method="loess", se=F) + 
+  labs(subtitle="ABV v IBU", 
+       y="IBU", 
+       x="ABV", 
+       title="Scatterplot of Ales")
+
+```
 
 
 
+##  **9. Knock their socks off!  Find one other useful inference from the data that you feel Budweiser may be able to find value in.  You must convince them why it is important and back up your conviction with appropriate statistical evidence.** 
 
+
+```{r}
+# Plot the IPA's on a scatterplot and circle them
+ipa_select <- allAles[allAles$IBU > 55 & allAles$IBU <= 130 & allAles$ABV > 5.8 & allAles$ABV < 11,]
+g <- ggplot(allbrews, aes(ABV, IBU, color=class))
+g + geom_jitter(width = .5, size=1 ) +
+  geom_encircle(aes(x=ABV,y=IBU), data=ipa_select,color="red", size=2, expand=0.008) +
+  geom_point(aes(col=class)) + 
+  labs(subtitle="ABV v IBU", 
+       y="IBU", 
+       x="ABV", 
+       title="Scatterplot of Various Types of Beer")
+
+# Compute the ales and IPA's in a new data frame
+styleSubset <- allAles%>%select(Style,ABV,IBU)
+allAles <-styleSubset[grep(paste(stylesofAle,collapse="|"),styleSubset$Style,ignore.case = TRUE),]
+allAles$styleClass <- ifelse(grepl("IPA", allAles$Style,ignore.case = T), "IPA",
+         ifelse(grepl("Ale", allAles$Style, ignore.case = T), "Ale", "Other"))
+stylesofAle = c("IPA")
+styleSubset <- allbrews%>%select(abbr,count,fips,ABV,IBU,Style,class)
+allIPA <-styleSubset[grep(paste(stylesofAle,collapse="|"),styleSubset$Style,ignore.case = TRUE),]
+allIPA$styleClass <- ifelse(grepl("IPA", allIPA$class,ignore.case = T), "IPA",)
+         
+# Find the number of IPA's in each state
+IPAsum = count(allIPA, vars = abbr)
+for (i in 1:dim(allIPA)[1]) {
+  for (j in 1:dim(IPAsum)[1]) {
+    x = IPAsum[j,]$vars
+    y = allIPA[i,]$abbr
+    if (x == y) {
+      allIPA[i,]$count = IPAsum[j,]$n
+    }
+  }
+}
+
+### IPA US Map
+plot_usmap(data = allIPA, values = "count", color = "red") + labs(title = "Map of the United States", subtitle = "This is a map of the number of IPA's by State") +
+  scale_fill_continuous(low = "white", high = "midnightblue",name = "Count", label = scales::comma) + 
+  theme(legend.position = "right")
+
+### IPA's North east    
+plot_usmap(include = .northeast_region, data = allIPA, values = "count", color = "red") + labs(title = "North East Region", subtitle = "This is a map of the number of IPA's by State.") + 
+  scale_fill_continuous(
+    low = "white", high = "midnightblue", name = "Count"  ) + theme(legend.position = "right")
+
+### IPA's North Central
+plot_usmap(include = .north_central_region, data = allIPA, values = "count", color = "red") + labs(title = "North central Region", subtitle = "This is a map of the number of IPA's by State.") +
+  scale_fill_continuous(
+    low = "white", high = "midnightblue", name = "Count") + theme(legend.position = "right")
+
+### IPA's South Central
+plot_usmap(include = .south_region, data = allIPA, values = "count", color = "red") + labs(title = "South Region", subtitle = "This is a map of the number of IPA's by State.") +
+  scale_fill_continuous(
+    low = "white", high = "midnightblue", name = "Count") + theme(legend.position = "right")
+
+### IPA's West Central
+plot_usmap(include = .west_region, data = allIPA, values = "count", color = "red") + labs(title = "West Region", subtitle = "This is a map of the number of IPA's by State.") +
+  scale_fill_continuous(
+    low = "white", high = "midnightblue", name = "Count") + theme(legend.position = "right")
 
 ```
 
